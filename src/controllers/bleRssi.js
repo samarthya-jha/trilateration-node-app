@@ -1,5 +1,8 @@
 const axios = require("axios")
 
+const trilat = require("trilat");
+const kalmanFilter = require("kalmanjs");
+
 const coordinateHelperApi = require("../lib/api").coordinateHelperApi;
 const rssiValueApi = require("../lib/api").rssiValueApi;
 const rssiValueMacIdApi = require("../lib/api").rssiValueMacIdApi;
@@ -7,6 +10,7 @@ const rssiValueMacIdApi = require("../lib/api").rssiValueMacIdApi;
 const parseDate = require("../lib/common_utils").parseDate;
 const conn = require("../../config/db_connection");
 let sampleData = require("../lib/sample_macid_data.json");
+const constants = require("../lib/constants");
 
 
 const getRssiValues = async () => {
@@ -70,6 +74,34 @@ const getRssiValuesByMacId = async () => {
 };
 
 
+const rssiToDistance = (rssi, anchor) => {
+  return Math.pow(10, ((constants.measured_power - rssi)/(10.0 * constants.environment_factor[anchor - 1])));
+}
+
+
+const trilateration = async (request) => {
+  const kFilter = new kalmanFilter();
+  const rssiValues = [ 
+                      kFilter.filter(request.rssiValues.anchor_1),
+                      kFilter.filter(request.rssiValues.anchor_2),
+                      kFilter.filter(request.rssiValues.anchor_3)
+                     ];
+  const distances = [rssiToDistance(rssiValues[0], 1), rssiToDistance(rssiValues[1], 2), rssiToDistance(rssiValues[2], 3)];
+  const anchors = [ 
+                    [constants.anchor_1[0], constants.anchor_1[1], distances[0]],
+                    [constants.anchor_2[0], constants.anchor_2[1], distances[1]],
+                    [constants.anchor_3[0], constants.anchor_3[1], distances[2]]
+                  ]
+
+  const coordinateValues = trilat(anchors);
+  const coordinates = {
+    x: coordinateValues[0],
+    y: coordinateValues[1]
+  };
+
+  return coordinates;
+}
+
 
 const getCoordinates = async (rssiData, timestamp) => {
   timestamp = parseDate(timestamp);
@@ -84,13 +116,13 @@ const getCoordinates = async (rssiData, timestamp) => {
         "anchor_3": rssiData[beacon].gw1003.toString(),
       }
     };
-    const coordinates = await axios.post(coordinateHelperApi, request);
-    rssiData[beacon].coordinates = coordinates.data;
+    const coordinates = await trilateration(request);
+    rssiData[beacon].coordinates = coordinates;
     const statement = "INSERT INTO `history` (`dmac`, `mapid`, `latitude`, `longitude`) VALUES (?, ?, ?, ?)";
     const fields = [beacon, rssiData.mapid, rssiData[beacon].coordinates.x, rssiData[beacon].coordinates.y];
     try {
-      const res = await conn.query(statement, fields);
-      console.log(`X and Y coordinates at ${timestamp} for beacon ${beacon} inserted in database`);
+      // const res = await conn.query(statement, fields);
+      console.log(`X ${coordinates.x} and Y ${coordinates.y} coordinates at ${timestamp} for beacon ${beacon} inserted in database`);
     } catch (err) {
       throw err;
     }

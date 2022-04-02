@@ -14,9 +14,11 @@
     "bluebird": "^3.7.2",
     "cors": "^2.8.5",
     "express": "^4.17.2",
+    "kalmanjs": "^1.1.0",
     "mysql": "^2.18.1",
     "mysql2": "^2.3.3",
-    "node-cron": "^3.0.0"
+    "node-cron": "^3.0.0",
+    "trilat": "^1.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"
