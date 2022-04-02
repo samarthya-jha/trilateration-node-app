@@ -121,7 +121,7 @@ const getCoordinates = async (rssiData, timestamp) => {
     const statement = "INSERT INTO `history` (`dmac`, `mapid`, `latitude`, `longitude`) VALUES (?, ?, ?, ?)";
     const fields = [beacon, rssiData.mapid, rssiData[beacon].coordinates.x, rssiData[beacon].coordinates.y];
     try {
-      // const res = await conn.query(statement, fields);
+      const res = await conn.query(statement, fields);
       console.log(`X ${coordinates.x} and Y ${coordinates.y} coordinates at ${timestamp} for beacon ${beacon} inserted in database`);
     } catch (err) {
       throw err;
