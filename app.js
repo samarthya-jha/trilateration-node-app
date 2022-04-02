@@ -26,4 +26,4 @@ app.listen(port, () => {
 });
 
 
-cron.schedule("* * * * * *", () => cronJob(process.argv[2]));
+cron.schedule("* * * * *", () => cronJob(process.argv[2]));
