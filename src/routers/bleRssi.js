@@ -10,7 +10,7 @@ const commonUtils = require("../lib/common_utils");
 
 router.get("/", async (req, res) => {
   try {
-    res.send(commonUtils.responseUtil(200, coordinates, "Node API working fine"));
+    res.send(commonUtils.responseUtil(200, null, "Node API working fine"));
   } catch (err) {
     console.log(err);
     res.send(commonUtils.responseUtil(500, null, err.message));
